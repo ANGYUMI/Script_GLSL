@@ -1,0 +1,122 @@
+/*
+// ------ WebGL How It Works ------
+https://webglfundamentals.org/webgl/lessons/webgl-how-it-works.html
+
+// ------ WebGL Shaders and GLSL ------ 
+https://webglfundamentals.org/webgl/lessons/webgl-shaders-and-glsl.html
+
+// 쉐이더토이 문서 ★
+https://www.shadertoy.com/howto
+
+// 전문 참고 사이트 ★
+https://threejsfundamentals.org/threejs/lessons/threejs-shadertoy.html
+
+
+// ------ Using a Shadertoy shader with three.js. ------
+Shadertoy is a famous website hosting amazing shader experiments. 
+People often ask how they can use those shaders with Three.js.
+It's important to recognize it's called Shader'TOY' for a reason. 
+In general shadertoy shaders are not about best practices.
+Rather they are a fun challenge similar to say dwitter (write code in 140 characters) 
+or js13kGames (make a game in 13k or less).
+
+// https://www.dwitter.net/
+// https://js13kgames.com/#winners
+
+In the case of Shadertoy the puzzle is, write a function that for a given pixel location outputs a color 
+that draws something interesting.
+It's a fun challenge and many of the result are amazing. But, it is not best practice.
+Compare this amazing shadertoy shader that draws an entire city(https://www.shadertoy.com/view/XtsSWs)
+Fullscreen on my GPU it runs at about 5 frames a second.
+Contrast that to a game like Cities: Skylines(https://store.steampowered.com/app/255710/Cities_Skylines/)
+This game runs 30-60 frames a second on the same machine because it uses more traditional techniques, 
+drawing buildings made from triangles with textures on them, etc...
+
+Still, let's go over using a Shadertoy shader with three.js.
+This is the default shadertoy shader if you pick "New" on shadertoy.com, at least as of January 2019.
+
+// GLSL
+One thing important to understand about shaders is they are written in a language called GLSL (Graphics Library Shading Language) 
+designed for 3D math which includes special types.
+Above we see 'vec4', 'vec2', 'vec3' as 3 such special types. 
+A 'vec2' has 2 values, a 'vec3' 3, a 'vec4' 4 values. 
+They can be addressed in a bunch of ways. 
+The most common ways are with 'x', 'y', 'z', and 'w' as in
+
+Unlike JavaScript, GLSL is more like C/C++ where variables have to have their type declared so instead of 'var v = 1.2; '
+it's 'float v = 1.2;' declaring 'v' to be a floating point number.
+
+Explaining GLSL in detail is more than we can do in this article.
+For a quick overview see this article and maybe follow that up with this series.
+
+// A fragment shader's responsibility
+It should be noted that, at least as of January 2019, 
+shadertoy.com only concerns itself with fragment shaders.
+A fragment shader's responsibility is, given a pixel location output a color for that pixel.
+2019년 1월에 확인된 바로는, 'shadertoy.com'는 오직 프래그먼트 쉐이더에만 관여한다.  
+프래그먼트 쉐이더는 OpenGL의 그래픽스 파이프라인에서 마지막으로 프로그래밍 가능한 스테이지다. 
+이 스테이지는 각 프래그먼트의 색상을 결정하여 나중에 프레임버퍼로 보내져 최종 윈도우에 그려질 수 있도록 한다. 
+레스터라이저가 프리미티브를 처리하고 나면, 색상이 입혀질 일련의 프래그먼트가 프래그먼트 쉐이더로 보내진다. 
+여기서 파이프라인의 작업량이 폭발적으로 증가하는데, 각 삼각형이 수백, 수천, 심지어 수백만 개의 프래그먼트를 생산해내기 때문이다. 
+
+// 'out(for output)' -> 'fragColor'
+Looking at the function above we can see the shader has an 'out' parameter called 'fragColor'. 
+'out' stands for 'output'. 
+It's a parameter the function is expected to provide a value for. 
+We need to set this to some color.
+'out'이라는 키워드를 사용하여 'color'를 출력 변수로 선언한다. 
+프래그먼트 쉐이더에서는 출력 변숫값을 윈도우나 화면으로 보낸다. 
+main 함수에서는 상수를 출력으로 보낸다. 
+디폴트로 이 값들이 직접 화면에 전달되며, 이 값들은 네 개의 부동소수점값으로 각각의 색상에 해당한다. 
+프래그먼트 쉐이더에서 색상값을 저장하기 위해 출력 변수를 생성할 때 'out'키워드를 사용했던 것처럼, 
+버텍스 쉐이더에서도 'out'키워드를 사용하여 출력 변수를 생성할 수 있다. 
+한 쉐이더에서 출력 변수에 저장하는 값은 다음 스테이지에서 'in' 키워드로 선언된 유사한 이름의 변수로 보내진다. 
+예를 들어 버텍스 쉐이더에서 'vs_color'라는 변수를 'out'키워드로 선언했다면, 프래그먼트 쉐이더 스테이지에서는 'in' 키워드로 선언된 
+'vs_color'라는 이름의 변수를 연관시킬 것이다. (그 사이에 다른 스테이지가 활성화되어 있지 않다면). 
+
+// 'in'(for input) -> 'fragCoord' 
+It also has an 'in' (for input) parameter called fragCoord.
+This is the pixel coordinate that is about to be drawn.
+We can use that coordinate to decide on a color.
+If the canvas we're drawing to is 400x300 pixels then the function will be called 400x400 times or 120,000 times.
+Each time 'fragCoord' will be a different pixel coordinate.
+프래그먼트 쉐이더의 입력으로 여러가지 내장 변수를 사용할 수 있다. 
+예를 들어 'gl_FragCoord'는 윈도우 안에서 프래그먼트의 위치를 가지고 있다. 
+이러한 변수를 사용하면 각 프래그먼트에 대해 고유한 색상을 부여할 수 있다. 
+'gl_Fragcoord 변수는 프래그먼트 쉐이더에서 사용하는 내장 변수 중 하나다. 
+하지만 다른 쉐이더 스테이지와 마찬가지로 프래그먼트 쉐이더에 대한 입력을 직접 정의할 수도 있다. 
+이 입력은 나중에 래스터라이제이션 이전에 수행되는 쉐이더에 대한 입력을 직접 정의할 수도 있다. 
+예를 들어 버텍스 쉐이더와 프래그먼트 쉐이더에만 있는 간단한 프로그램이라면 프래그먼트 쉐이더에서 버텍스 쉐이더로 데이터를 전달할 수 있다. 
+프래그먼트 쉐이더의 입력은 다른 스테이지의 입력과는 다소 차이점이 있는데, 
+다른 스테이지들은 OpenGL이 입력값을 렌더링되는 프리미티브에 따라 보간한다. 
+
+//'iResolution'
+There are 2 more variables being used that are not defined in the code. 
+One is 'iResolution'.
+This is set to the resolution of the canvas. 
+If the canvas is 400x300 then iResolution would be 400,300 
+so as the pixel coordinates change that makes uv go from 0.0 to 1.0 across and up the texture. 
+Working with normalized values often makes things easier 
+and so the majority of shadertoy shaders start with something like this.
+
+//'iTime'
+The other undefined variable in the shader is iTime. 
+This is the time since the page loaded in seconds.
+In shader jargon these global variables are called uniform variables.
+They are called uniform because they don't change,
+they stay uniform from one iteration of the shader to the next. 
+It's important to note all of them are specific to shadertoy.
+They are not official GLSL variables.
+They are variables the makers of shadertoy made up.
+The Shadertoy docs(https://www.shadertoy.com/howto) define several more.
+For now let's write something that handles the two being used in the shader above.
+
+The first thing to do is let's make a single plane that fills the canvas. 
+If you haven't read it yet we did this in the article on backgrounds
+(https://threejsfundamentals.org/threejs/lessons/threejs-backgrounds.html) 
+// Three.js Backgrounds and Skyboxes: https://threejsfundamentals.org/threejs/lessons/threejs-backgrounds.html
+so let's grab that example but remove the cubes. 
+It's pretty short so here's the entire thing
+
+// https://threejsfundamentals.org/threejs/lessons/threejs-shadertoy.html
+*/
