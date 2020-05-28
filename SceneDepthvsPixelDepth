@@ -1,0 +1,26 @@
+/*
+SceneDepth
+The SceneDepth expression outputs the existing scene depth. 
+This is similar to DestDepth, 
+except that DestDepth can sample the depth only at the pixel currently being drawn, 
+whereas SceneDepth can sample depth at any location.
+
+씬뎁스
+씬뎁스는 화면 전체의 깊이를 수치로 표현한 것이다. 
+SceneDepth returns a raw depth value (integer from 0 to 2^24-1)
+씬뎁스는 0에서 2의 24승에서 1을 뺀 값의 범위를 가진다. 
+왜 2의 24승이냐면 보통 32비트를 쓰는데 8비트는 stencil buffer와 같은 값이 최적화를 위해서 쓰이기 때문에
+나머지인 2의 24승 -1의 값을 쓰는 것이다. 
+Z값의 최대값은 16777215가 된다. 
+
+PixelDepth
+The PixelDepth expression outputs the depth, 
+or distance from the camera, of the pixel currently being rendered. 
+For details on using the value, consult DestDepth.
+
+픽셀뎁스는 카메라에서 해당 오브젝트까지의 거리다. 
+즉 씬뎁스에서 픽셀뎁스를 뺀다는 것은 오브젝트와 각각의 씬 전체가 얼마나 떨어져 있느냐를 알려준다. 
+밑에 그림을 보면 d1, d2, d3, d4가 보이는데 이것들이 씬뎁스에서 픽셀뎁스를 뺀 부분이다. 
+
+참고: https://blog.naver.com/daehuck/220394417994
+*/
